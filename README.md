@@ -282,6 +282,17 @@ Isolate metrics by cluster/environment using labels and VMAuth for secure multi-
 - VictoriaMetrics: 4 CPU, 8Gi memory
 - Grafana: 2 CPU, 4Gi memory
 - vmagent: 1 CPU, 2Gi memory
+** Dashboard examples **:
+<img width="1502" height="687" alt="image" src="https://github.com/user-attachments/assets/7de27580-9ee7-42ab-b00c-85b15dd33ed3" />
+
+<img width="1504" height="781" alt="image" src="https://github.com/user-attachments/assets/844eb0c9-fd01-4be3-8ae9-cf7de1780a80" />
+<img width="1487" height="718" alt="image" src="https://github.com/user-attachments/assets/54c01dbe-c05c-48b5-9577-d187c884adfe" />
+<img width="1486" height="821" alt="image" src="https://github.com/user-attachments/assets/99beeb3b-b452-4b2d-9cd5-707a9882a8f6" />
+<img width="1498" height="788" alt="image" src="https://github.com/user-attachments/assets/af02671b-bc80-4d3a-8010-94fcf815d24c" />
+
+
+
+
 
 ## 🤝 Contributing
 
