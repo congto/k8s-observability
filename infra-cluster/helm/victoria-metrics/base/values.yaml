@@ -1,0 +1,210 @@
+# platform-tools/victoria-metrics/base/values.yaml
+# Base configuration for VictoriaMetrics HA deployment with 100% uptime
+
+# Global configuration
+global:
+  # Cluster domain for service discovery
+  clusterDomain: cluster.local
+  
+# Use the 'vm' alias to pass values to the sub-chart
+vm:
+  # ==========================================================================
+  # Service Account Configuration - MUST match IAM role
+  # ==========================================================================
+  serviceAccount:
+    create: true
+    # Override the default name to match IAM role expectation
+    name: "victoria-metrics-storage"
+  
+  # ==========================================================================
+  # HA Component Configuration - All components enabled for full HA
+  # ==========================================================================
+  
+  # VMStorage - Stateful storage layer
+  vmstorage:
+    enabled: true
+    # Base replicas - will be overridden in environment
+    replicaCount: 2
+    
+    # Service account - use the global one
+    serviceAccount:
+      create: false  # Use the global SA
+      name: "victoria-metrics-storage"
+    
+    # Pod management policy for ordered updates
+    podManagementPolicy: OrderedReady
+    
+    # Termination grace period for clean shutdown
+    terminationGracePeriodSeconds: 60
+    
+    # Base storage configuration - FIXED field name
+    persistentVolume:
+      enabled: true
+      storageClassName: "gp3"  # Fixed from storageClass
+      size: 10Gi
+    
+    # Security context
+    podSecurityContext: &podSecurity
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+    
+    securityContext: &containerSecurity
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65534
+      capabilities:
+        drop:
+          - ALL
+    
+    # Health checks
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+  # VMInsert - Write path
+  vminsert:
+    enabled: true
+    replicaCount: 2
+    
+    podSecurityContext: *podSecurity
+    securityContext: *containerSecurity
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 8480
+    
+    # Health checks
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+  # VMSelect - Read path
+  vmselect:
+    enabled: true
+    replicaCount: 2
+    
+    podSecurityContext: *podSecurity
+    securityContext: *containerSecurity
+    
+    # Use deployment mode with a shared PVC
+    mode: "deployment"
+    
+    # Cache storage - FIXED field name
+    persistentVolume:
+      enabled: true
+      storageClassName: "gp3"  # Fixed from storageClass
+      size: 5Gi
+      # Create a single shared PVC for all replicas
+      existingClaim: ""  # Will create new one
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 8481
+    
+    # Health checks
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+  # VMAgent - Metrics collection
+  vmagent:
+    enabled: false
+    replicaCount: 2
+    
+    podSecurityContext: *podSecurity
+    securityContext: *containerSecurity
+    
+    # Persistent queue for reliability - FIXED field name
+    persistentVolume:
+      enabled: true
+      storageClassName: "gp3"  # Fixed from storageClass
+      size: 2Gi
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 8429
+
+  # VMAuth - Authentication & Load Balancing
+  vmauth:
+    enabled: true
+    replicaCount: 2
+    
+    podSecurityContext: *podSecurity
+    securityContext: *containerSecurity
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 8427
+    
+    # Auth config will be provided as a secret
+    configSecretName: ""  # Will use auto-generated secret
+    
+    # Ingress disabled by default
+    ingress:
+      enabled: false
+
+  # VMAlert - Alerting engine
+  vmalert:
+    enabled: true
+    replicaCount: 2
+    
+    podSecurityContext: *podSecurity
+    securityContext: *containerSecurity
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 8880
+    
+  # ==========================================================================
+  # Common Configuration
+  # ==========================================================================
+  
+  # Service monitors disabled by default
+  serviceMonitor:
+    enabled: false
+  
+  # Network policies disabled by default
+  networkPolicy:
+    enabled: false
+    
+  # Pod disruption budgets enabled for all components
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+    
+  # Common labels for all resources
+  commonLabels:
+    app.kubernetes.io/part-of: "victoria-metrics"
+    app.kubernetes.io/managed-by: "helm"

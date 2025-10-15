@@ -1,0 +1,13 @@
+# platform-tools/victoria-metrics/base/Chart.yaml
+apiVersion: v2
+name: victoria-metrics-base
+description: Base configuration for VictoriaMetrics HA cluster deployment
+type: application
+version: 1.0.0
+appVersion: "1.116.0"  # Latest VictoriaMetrics version
+
+dependencies:
+  - name: victoria-metrics-cluster
+    version: "0.24.1"  # Latest stable chart version (June 2025)
+    repository: "https://victoriametrics.github.io/helm-charts/"
+    alias: vm

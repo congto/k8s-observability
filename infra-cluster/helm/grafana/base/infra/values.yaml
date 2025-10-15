@@ -1,0 +1,249 @@
+# infrastructure/infra-myop/ap-south-1/grafana/values.yaml
+
+grafana:
+  # ==========================================================================
+  # HA Configuration - Production Scale  
+  # ==========================================================================
+  replicas: 1
+
+  # ==========================================================================
+  # Global Image Pull Secrets
+  # ==========================================================================
+  global:
+    imagePullSecrets:
+      - name: dockerhub-secret
+  
+  # ==========================================================================
+  # Init Container Configuration - Fix Docker Hub rate limit
+  # ==========================================================================
+  initChownData:
+    enabled: true
+  # ==========================================================================
+  # Database Configuration - Aurora PostgreSQL
+  # ==========================================================================
+  database:
+    type: postgres
+    host: "infra-aurora-common-pg.cluster-xxxxxxxxx.ap-south-1.rds.amazonaws.com"
+    name: aurora_grafana
+    user: grafana
+    existingSecret: "grafana-db-secret"
+    secretKeys:
+      userKey: username
+      passwordKey: password
+      hostKey: host
+      databaseKey: database
+    sslMode: require
+
+  # ==========================================================================
+  # Environment Variables - CORRECT FORMAT: envValueFrom
+  # ==========================================================================
+  envValueFrom:
+    GF_DATABASE_PASSWORD:
+      secretKeyRef:
+        name: grafana-db-secret
+        key: password
+
+  # ==========================================================================
+  # Production Resource Configuration
+  # ==========================================================================
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+      
+  # ==========================================================================
+  # Storage Configuration
+  # ==========================================================================
+  persistence:
+    enabled: true
+    existingClaim: grafana-efs-pvc
+
+  # Pod Configuration for In-Place Resize (K8s 1.33 feature)
+  # ==========================================================================
+  podAnnotations:
+    resize.kubernetes.io/enabled: "true"
+    
+  # ==========================================================================
+  # Node Placement - Infrastructure Nodes
+  # ==========================================================================
+  nodeSelector:
+    nodepool: "general-arm"
+    architecture: "arm64"
+    workload-type: "general"
+    
+  tolerations: []
+      
+  #  ==========================================================================
+  # Pod Disruption Budget
+  # ==========================================================================
+  podDisruptionBudget:
+    create: true
+    minAvailable: 0  # Allow VPA to restart the pod when needed
+    maxUnavailable: 1
+
+  # ==========================================================================
+  # Probes - Optimized for fast recovery
+  # ==========================================================================
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 3
+
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+
+
+  # ==========================================================================
+  # Ingress Configuration - Shared ALB
+  # ==========================================================================
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/group.name: "common-infra-alb"
+      alb.ingress.kubernetes.io/scheme: internal
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/healthcheck-path: /api/health
+      alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+      alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+      alb.ingress.kubernetes.io/tags: "Environment=infra,Team=platform"
+    hosts:
+      - grafana.infra.service
+    path: /
+    pathType: Prefix
+  # ==========================================================================
+  # Data Sources Configuration - VictoriaMetrics
+  # ==========================================================================
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: VictoriaMetrics
+          type: prometheus
+          access: proxy
+          url: http://victoria-metrics-vm-vmselect.monitoring.svc.cluster.local:8481/select/0/prometheus
+          isDefault: true
+          basicAuth: true
+          basicAuthUser: admin
+          secureJsonData:
+            basicAuthPassword: admin-password
+          jsonData:
+            httpMethod: POST
+            manageAlerts: true
+            prometheusType: Prometheus
+            prometheusVersion: 2.40.0
+            cacheLevel: 'High'
+            
+        - name: VictoriaMetrics-Write
+          type: prometheus
+          access: proxy
+          url: http://victoria-metrics-vm-vminsert.monitoring.svc.cluster.local:8480/insert/0/prometheus
+          basicAuth: true
+          basicAuthUser: writeonly
+          secureJsonData:
+            basicAuthPassword: writeonly-password
+          jsonData:
+            httpMethod: POST
+            
+  # ==========================================================================
+  # Dashboards
+  # ==========================================================================
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+            
+        - name: 'victoriametrics'
+          orgId: 1
+          folder: 'VictoriaMetrics'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/victoriametrics
+            
+  dashboards:
+    default:
+      kubernetes-cluster:
+        gnetId: 315
+        revision: 3
+        datasource: VictoriaMetrics
+      node-exporter:
+        gnetId: 1860
+        revision: 37
+        datasource: VictoriaMetrics
+    victoriametrics:
+      vm-cluster:
+        gnetId: 11176
+        revision: 18
+        datasource: VictoriaMetrics
+        
+  # ==========================================================================
+  # Plugins
+  # ==========================================================================
+  plugins:
+    - grafana-piechart-panel
+    - grafana-worldmap-panel
+    - grafana-clock-panel
+    
+  # ==========================================================================
+  # Grafana Configuration
+  # ==========================================================================
+  grafana.ini:
+    server:
+      domain: grafana.infra.service
+      root_url: "http://grafana.infra.service/"
+    database:
+      type: postgres
+      host: "infra-aurora-common-pg.cluster-xxxxxxxxx.ap-south-1.rds.amazonaws.com:5432"
+      name: aurora_grafana
+      user: grafana
+      ssl_mode: require
+    session:
+      provider: postgres
+      provider_config: "user=grafana dbname=aurora_grafana sslmode=require host=infra-aurora-common-pg.cluster-xxxxxxxxx.ap-south-1.rds.amazonaws.com port=5432"
+    feature_toggles:
+      enable: publicDashboards
+      
+  # ==========================================================================
+  # Monitoring
+  # ==========================================================================
+  serviceMonitor:
+    enabled: false
+      
+  # ==========================================================================
+  # Labels
+  # ==========================================================================
+  commonLabels:
+    environment: "infra"
+    region: "ap-south-1"
+    team: "platform"
+    cluster: "k8s-infra-1"
+  commonAnnotations:
+    "hyeontech.com/managed-by": "platform-team"
+    "hyeontech.com/cost-center": "infrastructure"

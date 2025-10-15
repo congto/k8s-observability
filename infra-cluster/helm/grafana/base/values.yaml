@@ -1,0 +1,152 @@
+# platform-tools/grafana/base/values.yaml
+# Base configuration for Grafana HA deployment
+
+# Global configuration
+global:
+  clusterDomain: cluster.local
+
+# Use the 'grafana' alias to pass values to the sub-chart
+grafana:
+  # ==========================================================================
+  # HA Configuration
+  # ==========================================================================
+  replicas: 2
+  
+  # ==========================================================================
+  # Database Configuration - Will be overridden in environment
+  # ==========================================================================
+  database:
+    type: postgres
+    host: ""  # Set in environment values
+    name: ""  # Set in environment values
+    user: ""  # Set in environment values
+    existingSecret: "grafana-db-secret"
+    secretKeys:
+      userKey: username
+      passwordKey: password
+      hostKey: host
+      databaseKey: database
+    sslMode: require
+    
+  # ==========================================================================
+  # Storage Configuration
+  # ==========================================================================
+  persistence:
+    type: pvc
+    enabled: true
+    storageClassName: "gp3"
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    
+  # ==========================================================================
+  # Security Context
+  # ==========================================================================
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+    seccompProfile:
+      type: RuntimeDefault
+      
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 472
+    capabilities:
+      drop:
+        - ALL
+        
+  # ==========================================================================
+  # Base Resources (Conservative)
+  # ==========================================================================
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+      
+  # ==========================================================================
+  # Health Checks
+  # ==========================================================================
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 60
+    timeoutSeconds: 30
+    periodSeconds: 10
+    failureThreshold: 3
+    
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 10
+    timeoutSeconds: 30
+    periodSeconds: 5
+    failureThreshold: 3
+    
+  # ==========================================================================
+  # Service Configuration
+  # ==========================================================================
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+    
+  # ==========================================================================
+  # Admin Configuration
+  # ==========================================================================
+  adminUser: admin
+  admin:
+    existingSecret: "grafana-admin-secret"
+    userKey: admin-user
+    passwordKey: admin-password
+  
+  # ==========================================================================
+  # Basic Grafana Configuration
+  # ==========================================================================
+  grafana.ini:
+    server:
+      protocol: http
+      http_port: 3000
+      serve_from_sub_path: false
+      
+    security:
+      disable_initial_admin_creation: false
+      cookie_secure: false
+      cookie_samesite: lax
+      
+    users:
+      allow_sign_up: false
+      auto_assign_org: true
+      auto_assign_org_role: Viewer
+      
+    auth:
+      disable_login_form: false
+      
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+      
+    log:
+      mode: console
+      level: info
+      
+  # ==========================================================================
+  # Ingress (disabled by default)
+  # ==========================================================================
+  ingress:
+    enabled: false
+    
+  # ==========================================================================
+  # Pod Disruption Budget
+  # ==========================================================================
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1

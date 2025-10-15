@@ -1,0 +1,12 @@
+apiVersion: v2
+name: grafana-base
+description: Base configuration for Grafana HA deployment with PostgreSQL backend
+type: application
+version: 1.0.0
+appVersion: "11.2.0"  # Latest Grafana version
+
+dependencies:
+  - name: grafana
+    version: "8.5.2"  # Latest stable Grafana Helm chart
+    repository: "https://grafana.github.io/helm-charts"
+    alias: grafana

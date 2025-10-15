@@ -1,0 +1,31 @@
+# grafana-efs-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-efs-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-efs-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: monitoring
+    name: grafana-efs-pvc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-0e23e50a6d2608c33

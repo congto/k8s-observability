@@ -1,0 +1,238 @@
+# infrastructure/infra-myop/ap-south-1/victoria-metrics/values.yaml
+vm:
+  # ==========================================================================
+  # VMAuth Configuration
+  # ==========================================================================
+  vmauth:
+    imagePullSecrets:
+      - name: dockerhub-secret
+    extraArgs:
+      discoverBackendIPs: "true"
+    config:
+      users:
+      # Dev Cluster - Write Only
+      - username: "dev-cluster"
+        password: "devcluster-123"
+        url_prefix:
+          - "http://victoria-metrics-vm-vminsert:8480/"
+        max_concurrent_requests: 100
+      
+      # Stage Cluster - Write Only
+      - username: "stage-cluster"
+        password: "stagecluster-123"
+        url_prefix:
+          - "http://victoria-metrics-vm-vminsert:8480/"
+        max_concurrent_requests: 100
+      - username: "readonly"
+        password: "readonly-password"
+        url_prefix:
+          - "http://victoria-metrics-vm-vmselect:8481/"
+      - username: "writeonly"
+        password: "writeonly-password"
+        url_prefix:
+          - "http://victoria-metrics-vm-vminsert:8480/"
+      - username: "admin"
+        password: "admin-password"
+        url_prefix:
+          - "http://victoria-metrics-vm-vmselect:8481/"
+          - "http://victoria-metrics-vm-vminsert:8480/"
+
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    nodeSelector:
+      nodepool: "general-arm"
+      architecture: "arm64"
+    tolerations: []
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [vmauth]
+            topologyKey: "kubernetes.io/hostname"
+    ingress:
+      enabled: true
+      ingressClassName: alb
+      annotations:
+        alb.ingress.kubernetes.io/group.name: "common-infra-alb"
+        alb.ingress.kubernetes.io/scheme: internal
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/healthcheck-path: /health
+        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+        alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+        alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+        alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+        alb.ingress.kubernetes.io/tags: "Environment=infra,Team=platform"
+        alb.ingress.kubernetes.io/inbound-cidrs: "10.11.0.0/16,10.0.0.0/16,10.12.0.0/16,10.13.0.0/16"
+
+      hosts:
+        - name: victoria-metrics.infra.service
+          path:
+            - /
+          port: http
+      pathType: Prefix
+
+  # ==========================================================================
+  # VMStorage Configuration
+  # ==========================================================================
+  vmstorage:
+    imagePullSecrets:
+      - name: dockerhub-secret
+    replicaCount: 2
+    serviceAccount:
+      create: false
+      name: "victoria-metrics-storage"
+    extraArgs:
+      storageDataPath: "/storage"
+      retentionPeriod: "15d"
+      maxConcurrentInserts: "16"
+      dedup.minScrapeInterval: "30s"
+    persistentVolume:
+      storageClassName: "gp3"
+      size: 100Gi
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "4Gi"
+    nodeSelector:
+      nodepool: "general-arm"
+      architecture: "arm64"
+    tolerations: []
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [vmstorage]
+            topologyKey: "kubernetes.io/hostname"
+    podDisruptionBudget:
+      minAvailable: 1
+
+  # ==========================================================================
+  # VMInsert Configuration
+  # ==========================================================================
+  vminsert:
+    imagePullSecrets:
+      - name: dockerhub-secret
+    replicaCount: 2
+    extraArgs:
+      maxInsertRequestSize: "32MB"
+      maxLabelsPerTimeseries: "50"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "2Gi"
+    nodeSelector:
+      nodepool: "general-arm"
+      architecture: "arm64"
+    tolerations: []
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [vminsert]
+            topologyKey: "kubernetes.io/hostname"
+
+  # ==========================================================================
+  # VMSelect Configuration
+  # ==========================================================================
+  vmselect:
+    imagePullSecrets:
+      - name: dockerhub-secret
+    replicaCount: 2
+    extraArgs:
+      cacheDataPath: "/cache"
+      search.maxConcurrentRequests: "32"
+      search.maxQueryDuration: "120s"
+      search.maxPointsPerTimeseries: "1000000"
+      search.maxSeries: "100000"
+    persistentVolume:
+      enabled: true
+      storageClassName: "gp3"
+      size: 50Gi
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        memory: "4Gi"
+    nodeSelector:
+      nodepool: "general-arm"
+      architecture: "arm64"
+    tolerations: []
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [vmselect]
+            topologyKey: "kubernetes.io/hostname"
+
+  # ==========================================================================
+  # VMAlert Configuration
+  # ==========================================================================
+  vmalert:
+    imagePullSecrets:
+      - name: dockerhub-secret
+    replicaCount: 2
+    datasource:
+      url: "http://vmselect:8481/select/0/prometheus"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    nodeSelector:
+      nodepool: "general-arm"
+      architecture: "arm64"
+    tolerations: []
+
+  # ==========================================================================
+  # Production Features
+  # ==========================================================================
+  serviceMonitor:
+    enabled: true
+    labels:
+      prometheus.io/operator: "true"
+  networkPolicy:
+    enabled: true
+  commonLabels:
+    environment: "infra"
+    region: "ap-south-1"
+    team: "platform"
+    cluster: "eks-aps1-infra-1"
+  commonAnnotations:
+    "hyeontech.com/managed-by": "platform-team"
+    "hyeontech.com/cost-center": "infrastructure"

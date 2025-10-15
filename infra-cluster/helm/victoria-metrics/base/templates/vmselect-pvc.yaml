@@ -1,0 +1,25 @@
+{{- if and .Values.vm.vmselect.enabled .Values.vm.vmselect.persistentVolume.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-vm-vmselect
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: vmselect
+    app.kubernetes.io/name: vm
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/part-of: victoria-metrics
+    {{- with .Values.vm.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.vm.vmselect.persistentVolume.storageClassName }}
+  resources:
+    requests:
+      storage: {{ .Values.vm.vmselect.persistentVolume.size }}
+{{- end }}
