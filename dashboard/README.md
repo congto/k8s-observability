@@ -17,6 +17,10 @@ Complete cluster-level monitoring dashboard showing:
 
 **Best for**: Daily operations, overall cluster health
 
+<img width="1910" height="937" alt="image" src="https://github.com/user-attachments/assets/4353b21b-3807-4487-ab0d-b4eeec867731" />
+
+<img width="1914" height="949" alt="image" src="https://github.com/user-attachments/assets/c2e7da38-fe5b-44cd-82ec-06534fe1edd5" />
+
 ---
 
 ### 2. Kubernetes Namespace Overview
@@ -31,6 +35,10 @@ Namespace-level resource monitoring:
 - Top namespaces by resource consumption
 
 **Best for**: Multi-tenant clusters, namespace-level troubleshooting
+
+<img width="1916" height="812" alt="image" src="https://github.com/user-attachments/assets/85f75b16-ed65-4d2b-9570-e2c3b583044c" />
+<img width="1913" height="811" alt="image" src="https://github.com/user-attachments/assets/1b73e257-5058-438b-b419-db3c26a74459" />
+
 
 ---
 
@@ -47,6 +55,13 @@ Detailed namespace analysis:
 
 **Best for**: Debugging namespace issues, detailed investigation
 
+<img width="1911" height="932" alt="image" src="https://github.com/user-attachments/assets/29b36dbb-cb91-4804-9639-6d5183523362" />
+<img width="1911" height="762" alt="image" src="https://github.com/user-attachments/assets/01d29826-81ae-4d3d-8648-71c61b754dc1" />
+<img width="1907" height="704" alt="image" src="https://github.com/user-attachments/assets/3fbc1ad8-7d65-4306-a279-6c3a174c00af" />
+<img width="1907" height="432" alt="image" src="https://github.com/user-attachments/assets/8ea70b6c-ba66-4d93-baee-ee4ed4c57e74" />
+
+
+
 ---
 
 ### 4. Kubernetes Deployment & Service Overview
@@ -61,6 +76,10 @@ Deployment and service monitoring:
 - Service latency and errors
 
 **Best for**: Application deployment monitoring, service health
+
+<img width="1904" height="782" alt="image" src="https://github.com/user-attachments/assets/ad8ff48d-dc09-4ae1-be57-868e0934a922" />
+<img width="1912" height="876" alt="image" src="https://github.com/user-attachments/assets/7a65e603-0262-49e6-b0f4-3b5e1bf283ee" />
+
 
 ---
 
@@ -78,6 +97,10 @@ Node-level metrics and health:
 
 **Best for**: Node troubleshooting, capacity planning
 
+<img width="1913" height="862" alt="image" src="https://github.com/user-attachments/assets/7763dead-f63f-422d-b62b-51e82b98f2f2" />
+<img width="1900" height="934" alt="image" src="https://github.com/user-attachments/assets/10efdbae-1d7a-4134-9db1-c58eaf124981" />
+
+
 ---
 
 ### 6. Kubernetes Namespace Pods Deep Dive
@@ -93,6 +116,9 @@ Pod-level detailed monitoring:
 - Container state transitions
 
 **Best for**: Pod-level debugging, container issues
+<img width="1901" height="924" alt="image" src="https://github.com/user-attachments/assets/6f040d3d-cb4b-4401-a7f0-e5f743ec81f9" />
+<img width="1915" height="848" alt="image" src="https://github.com/user-attachments/assets/8e92ed2a-e6f0-40f4-b39e-1e01e42977ed" />
+<img width="1911" height="872" alt="image" src="https://github.com/user-attachments/assets/7e49da79-e0a1-43d9-85e6-eaf8bbb8a721" />
 
 ---
 
