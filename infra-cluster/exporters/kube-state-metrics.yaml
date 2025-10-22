@@ -161,9 +161,9 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
       # NO tolerations needed - general-arm nodepool has no taints
-      nodeSelector:
-        nodepool: general-arm
-        architecture: arm64
+      #nodeSelector:
+        #nodepool: general-arm
+        #architecture: arm64
 
 ---
 apiVersion: v1
